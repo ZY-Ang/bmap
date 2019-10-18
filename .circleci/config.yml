@@ -1,0 +1,147 @@
+# Check https://circleci.com/docs/2.0/ for more details
+#
+version: 2.1
+
+defaults: &config_project_defaults
+  working_directory: ~/repo
+
+executors:
+  node_default:
+    docker:
+      - image: circleci/node:lts
+  java_default:
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
+commands:
+  install_webapp:
+    description: "Installs dependencies in preparation to build and deploy webapp"
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore latest node_modules from cache
+          keys:
+            - webapp-v1-{{ arch }}-{{ .Branch }}-{{ checksum "webapp/package-lock.json" }}-{{ .Revision }}
+            - webapp-v1-{{ arch }}-{{ .Branch }}-{{ checksum "webapp/package-lock.json" }}
+            - webapp-v1-{{ arch }}-{{ .Branch }}
+            - webapp-v1-{{ arch }}
+      - run:
+          working_directory: ~/repo/webapp
+          command: npm install
+      - save_cache:
+          name: Save post-install node_modules into cache
+          key: webapp-v1-{{ arch }}-{{ .Branch }}-{{ checksum "webapp/package-lock.json" }}-{{ .Revision }}
+          paths:
+            - ~/repo/webapp/node_modules
+  install_crawler:
+    description: "Installs dependencies in preparation to build and deploy crawler"
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore latest node_modules from cache
+          keys:
+            - crawler-v1-{{ arch }}-{{ .Branch }}-{{ checksum "crawler/pom.xml" }}-{{ .Revision }}
+            - crawler-v1-{{ arch }}-{{ .Branch }}-{{ checksum "crawler/pom.xml" }}
+            - crawler-v1-{{ arch }}-{{ .Branch }}
+            - crawler-v1-{{ arch }}
+      - run:
+          working_directory: ~/repo/crawler
+          command: mvn dependency:go-offline
+      - save_cache:
+          name: Save post-install m2 dependencies into cache
+          key: crawler-v1-{{ arch }}-{{ .Branch }}-{{ checksum "crawler/pom.xml" }}-{{ .Revision }}
+          paths:
+            - ~/.m2
+
+jobs:
+  webapp_build_deploy:
+    <<: *config_project_defaults
+    executor: node_default
+    steps:
+      - install_webapp
+      - run:
+          working_directory: ~/repo/webapp
+          command: npm test
+      - run:
+          working_directory: ~/repo/webapp
+          command: npm run build
+      - run:
+          working_directory: ~/repo/webapp
+          command: ./node_modules/.bin/firebase deploy --token=$FIREBASE_TOKEN
+  crawler_install_deploy:
+    <<: *config_project_defaults
+    executor: java_default
+    steps:
+      - install_crawler
+      - run:
+          name: Create ssh key file
+          command: echo $EC2_WS_KEY | base64 -d > ~/ec2-ws-key.pem
+      - run:
+          name: Set ssh key file permissions
+          working_directory: 
+          command: chmod 400 ~/ec2-ws-key.pem
+      - run:
+          working_directory: ~/repo/crawler
+          command: mvn clean
+      - run:
+          working_directory: ~/repo/crawler
+          command: mvn package
+      - run:
+          working_directory: ~/
+          command: mkdir build
+      - run:
+          working_directory: ~/build
+          command: cp -r ~/repo/crawler/target/. ~/build/
+      - run: echo $GOOGLE_APPLICATION_CREDENTIALS > ~/build/firebase-adminsdk.json
+      - run:
+          name: killall processes belonging to ubuntu - stop previous server, if any
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST 'sudo killall -u ubuntu' || true
+      - run:
+          name: Delete all files
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST 'rm -rf ./* && mkdir crawler && ls -aL'
+      - run:
+          name: Send Files to Server
+          command: |
+            scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "~/ec2-ws-key.pem" ~/build/* ubuntu@$SSH_HOST:/home/ubuntu/crawler/ || true
+      - run:
+          name: Set jar executable permissions
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "chmod +x ~/crawler/crawler-jar-with-dependencies.jar"
+      - run:
+          name: Start parallel crawler x1
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std1.out 2> std1.err & ) & "
+      - run:
+          name: Start parallel crawler x2
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std2.out 2> std2.err & ) & "
+      - run:
+          name: Start parallel crawler x3
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std3.out 2> std3.err & ) & "
+      - run:
+          name: Start parallel crawler x4
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std4.out 2> std4.err & ) & "
+
+
+workflows:
+  version: 2
+  master_flow:
+    jobs:
+      - webapp_build_deploy:
+          filters:
+            branches:
+              only:
+                - master
+                - ci
+                - frontend
+      - crawler_install_deploy:
+          filters:
+            branches:
+              only:
+                - master
+                - ci
+                - crawler
