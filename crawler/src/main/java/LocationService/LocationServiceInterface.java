@@ -66,6 +66,9 @@ public interface LocationServiceInterface {
   }
 
   private String[] getIps (String url) {
+    if (url == null) {
+      return new String[0];
+    }
     try {
       return Arrays.stream (InetAddress.getAllByName (url))
           .map (InetAddress::getHostAddress)
