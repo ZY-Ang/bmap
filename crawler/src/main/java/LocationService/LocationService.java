@@ -2,9 +2,9 @@ package LocationService;
 
 public class LocationService {
 
-  private LocationServiceInterface locationInterface;
+  private LocationServiceInterface locationInterface = new LocationIPGeolocation ();
 
-  protected Location[] getLocations (String url) {
+  public Location[] getLocations (String url) {
     return locationInterface.getLocations (url);
   }
 }

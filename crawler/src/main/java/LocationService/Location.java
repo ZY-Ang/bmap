@@ -2,6 +2,14 @@ package LocationService;
 
 public class Location {
 
+  public Location (String ip, String country, double latitude, double longitude) {
+    this.ip = ip;
+    this.country = country;
+    this.latitude = latitude;
+    this.longitude = longitude;
+    this.coords = String.format ("%f,%f", latitude, longitude);
+  }
+
   public String ip, country, coords;
   public double latitude, longitude;
 
@@ -18,10 +26,10 @@ public class Location {
   public String toString () {
     return "Location{" +
         "ip='" + ip + '\'' +
-        ", country='" + country + '\'' +
-        ", coords='" + coords + '\'' +
-        ", latitude=" + latitude +
-        ", longitude=" + longitude +
+        ",\tcountry='" + country + '\'' +
+        ",\tcoords='" + coords + '\'' +
+        ",\tlatitude=" + latitude +
+        ",\tlongitude=" + longitude +
         '}';
   }
 }

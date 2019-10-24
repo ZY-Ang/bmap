@@ -12,13 +12,13 @@ import java.util.Arrays;
 
 public interface LocationServiceInterface {
 
-  public int HTTP_TOO_MANY_REQUESTS = 429;
+  int HTTP_TOO_MANY_REQUESTS = 429;
 
   String getRequest (String ip);
 
   Location getLocation (String data);
 
-  public default Location[] getLocations (String url) {
+  default Location[] getLocations (String url) {
     String ips[] = this.getIps (url);
     ArrayList<Location> locations = new ArrayList<> ();
     for (String ip : ips) {

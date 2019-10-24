@@ -5,8 +5,6 @@ import org.json.JSONObject;
 /*Max 2 requests/sec*/
 public class LocationIPGeolocation implements LocationServiceInterface {
 
-  public static final int HTTP_TOO_MANY_REQUESTS = 429;
-
   private String host = "http://ipgeolocation.com/";
 
   @Override
