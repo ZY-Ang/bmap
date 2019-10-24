@@ -11,7 +11,7 @@ executors:
       - image: circleci/node:lts
   java_default:
     docker:
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: circleci/openjdk:11.0.4-jdk-stretch
 
 commands:
   install_webapp:
@@ -93,6 +93,10 @@ jobs:
           working_directory: ~/build
           command: cp -r ~/repo/crawler/target/. ~/build/
       - run: echo $GOOGLE_APPLICATION_CREDENTIALS > ~/build/firebase-adminsdk.json
+      - run:
+          name: Install JRE
+          command: |
+            ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST 'sudo apt update && sudo apt install -y openjdk-11-jdk'
       - run:
           name: killall processes belonging to ubuntu - stop previous server, if any
           command: |
