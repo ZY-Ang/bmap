@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -42,7 +43,7 @@ public class Crawler {
      * Access url and parse for links on the web page
      * @return links found on the url's web page
      */
-    public long crawl(List<String> result) {
+    public long crawl(List<String> links, List<String> words) {
         StringBuilder stringBuilder = new StringBuilder();
         long time = -1;
         if (connection == null) {
@@ -73,13 +74,18 @@ public class Crawler {
                 in.close();
 
                 // Parse for links in html
-                result.addAll(parseURL(response.toString(), url));
+                Document doc = Jsoup.parse(response.toString(), url);
+                links.addAll(parseURL(doc));
+                words.addAll(parseWord(doc));
             } else {
                 stringBuilder.append("HTTP status code not OK");
             }
             connection.disconnect();
         } catch (IOException e) {
             System.out.printf("Unknown/invalid host: %s", url);
+        } catch (UncheckedIOException e) {
+//            Http/s responses that cannot be parsed
+//            e.printStackTrace();
         }
         System.out.println(stringBuilder.toString());
         return time;
@@ -87,15 +93,12 @@ public class Crawler {
 
     /**
      * Parse all <a> tag and return it as links
-     * @param html body to parse
-     * @param url base url of the html page (to join with relative link to get complete link)
      * @return list of links parsed from html
      */
-    private List<String> parseURL(String html, String url){
+    private List<String> parseURL(Document doc){
         List<String> links = new ArrayList<>();
 
         try {
-            Document doc = Jsoup.parse(html, url);
             // Retrieve all <a> tag is html
             Elements elements = doc.select("a");
             for (Element e : elements) {
@@ -109,5 +112,18 @@ public class Crawler {
 //            e.printStackTrace();
         }
         return links;
+    }
+
+    private List<String> parseWord(Document doc) {
+        List<String> words = new ArrayList<>();
+        try {
+            String body = doc.body().text();
+            words = Arrays.asList(body.replaceAll("[^a-zA-Z ]", "").toLowerCase().split("\\s+"));
+
+        } catch (UncheckedIOException e) {
+//            Http/s responses that cannot be parsed
+//            e.printStackTrace();
+        }
+        return words;
     }
 }
