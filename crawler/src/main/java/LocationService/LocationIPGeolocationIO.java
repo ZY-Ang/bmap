@@ -14,7 +14,7 @@ public class LocationIPGeolocationIO implements LocationServiceInterface {
   }
 
   @Override
-  public Location getLocation (String data) {
+  public Location parseLocation (String data) {
     JSONObject jsonData = new JSONObject (data);
     return new Location (jsonData.getString ("ip"), jsonData.getString ("country_name"),
                          jsonData.getDouble ("latitude"), jsonData.getDouble ("longitude"));

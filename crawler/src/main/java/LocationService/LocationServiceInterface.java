@@ -7,7 +7,6 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public interface LocationServiceInterface {
@@ -16,44 +15,37 @@ public interface LocationServiceInterface {
 
   String getRequest (String ip);
 
-  Location getLocation (String data);
+  Location parseLocation (String data);
 
-  default Location[] getLocations (String url) {
-    String ips[] = this.getIps (url);
-    ArrayList<Location> locations = new ArrayList<> ();
-    for (String ip : ips) {
-      try {
-        HttpURLConnection connection = makeConnection (ip);
+  default Location getLocation (String ip) {
+    try {
+      HttpURLConnection connection = makeConnection (ip);
+      int responseCode = connection.getResponseCode ();
+      while (responseCode != HttpURLConnection.HTTP_BAD_REQUEST) {
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+          BufferedReader in = new BufferedReader (new InputStreamReader (
+              connection.getInputStream ()));
+          String inputLine;
+          StringBuffer response = new StringBuffer ();
 
-        int responseCode = connection.getResponseCode ();
-        while (responseCode != HttpURLConnection.HTTP_BAD_REQUEST) {
-          if (responseCode == HttpURLConnection.HTTP_OK) {
-            BufferedReader in = new BufferedReader (new InputStreamReader (
-                connection.getInputStream ()));
-            String inputLine;
-            StringBuffer response = new StringBuffer ();
-
-            while ((inputLine = in.readLine ()) != null) {
-              response.append (inputLine);
-            }
-            in.close ();
-            locations.add (this.getLocation (response.toString ()));
-            break;
-          } else if (responseCode == HTTP_TOO_MANY_REQUESTS) {
-            Thread.sleep (100);
-            connection = makeConnection (ip);
-
-            responseCode = connection.getResponseCode ();
-          } else {
-            break;
+          while ((inputLine = in.readLine ()) != null) {
+            response.append (inputLine);
           }
+          in.close ();
+          return this.parseLocation (response.toString ());
+        } else if (responseCode == HTTP_TOO_MANY_REQUESTS) {
+          Thread.sleep (100);
+          connection = makeConnection (ip);
+          responseCode = connection.getResponseCode ();
+        } else {
+          break;
         }
-      } catch (IOException | InterruptedException e) {
-        e.printStackTrace ();
       }
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace ();
     }
 
-    return locations.toArray (new Location[0]);
+    return null;
   }
 
   private HttpURLConnection makeConnection (String ip)
@@ -65,7 +57,7 @@ public interface LocationServiceInterface {
     return connection;
   }
 
-  private String[] getIps (String url) {
+  default String[] getIps (String url) {
     if (url == null) {
       return new String[0];
     }

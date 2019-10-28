@@ -13,7 +13,7 @@ public class LocationIPGeolocation implements LocationServiceInterface {
   }
 
   @Override
-  public Location getLocation (String data) {
+  public Location parseLocation (String data) {
     JSONObject jsonData = new JSONObject (data);
     return new Location (jsonData.getString ("ip"), jsonData.getString ("country")
         , jsonData.getString ("coords"));
