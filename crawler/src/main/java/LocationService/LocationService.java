@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class LocationService {
 
-  private LocationServiceInterface locationInterface = new LocationIPGeolocation ();
+  private static LocationServiceInterface locationInterface = new LocationIPGeolocation();
 
   public void setLocationInterface (LocationServiceInterface locationInterface) {
     this.locationInterface = locationInterface;
