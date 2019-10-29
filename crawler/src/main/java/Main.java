@@ -13,6 +13,8 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.io.FileInputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,7 +84,6 @@ public class Main {
                     addUrlsToQueue(Arrays.asList(seed));
                 }
             }
-
             @Override
             public void onCancelled(DatabaseError error) {}
         });
@@ -186,26 +187,25 @@ public class Main {
     /**
      * Adds the words' counts to the respective location in the necessary countries
      */
-    private static void addWordsToCountries(Location[] locations, Map<String, Long> wordCounts) {
-        System.out.println("addWordsToCountries.locations = " + locations.length);
+    private static void addWordsToCountries(String[] countries, Map<String, Long> wordCounts) {
+        System.out.println("addWordsToCountries.countries = " + countries.length);
         System.out.println("addWordsToCountries.wordCounts = " + wordCounts.keySet().size());
         String environment = getEnvironment();
         FirebaseDatabase db = FirebaseDatabase.getInstance();
         for (String word : wordCounts.keySet()) {
-            db.getReference(environment + "/words/" + word + "/potatoCountry").runTransaction(new Transaction.Handler() {
-                @Override
-                public Transaction.Result doTransaction(MutableData mutableData) {
-                    Long count = mutableData.getValue(Long.class);
-                    if (count ==  null) mutableData.setValue(wordCounts.get(word));
-                    else mutableData.setValue(count + wordCounts.get(word));
-                    return Transaction.success(mutableData);
-                }
-                @Override
-                public void onComplete(DatabaseError error, boolean committed, DataSnapshot currentData) {}
-            });
-//            for (Location location: locations) {
-//                TODO: FIX LOCATIONS
-//            }
+            for (String country: countries) {
+                db.getReference(environment + "/words/" + word + "/" + country).runTransaction(new Transaction.Handler() {
+                    @Override
+                    public Transaction.Result doTransaction(MutableData mutableData) {
+                        Long count = mutableData.getValue(Long.class);
+                        if (count ==  null) mutableData.setValue(wordCounts.get(word));
+                        else mutableData.setValue(count + wordCounts.get(word));
+                        return Transaction.success(mutableData);
+                    }
+                    @Override
+                    public void onComplete(DatabaseError error, boolean committed, DataSnapshot currentData) {}
+                });
+            }
         }
     }
 
@@ -232,6 +232,66 @@ public class Main {
         return committed[0];
     }
 
+    /**
+     * First queries our internal cache for results against a domain then the API.
+     */
+    public static String[] getCountriesForUrl(String url) {
+        try {
+            String environment = getEnvironment();
+            String domain = getDomainName(url);
+            String domainUid = domain.replaceAll("\\.", "-");
+            final Semaphore getSemaphore = new Semaphore(0);
+            List<Location> locations = new ArrayList<Location>();
+            DatabaseReference cacheRef = FirebaseDatabase.getInstance().getReference(environment + "/countriesCache/" + domainUid);
+            cacheRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (snapshot.exists() && snapshot.hasChildren()) {
+                        snapshot.getChildren().forEach(childLocationRef -> locations.add(childLocationRef.getValue(Location.class)));
+                    }
+                    getSemaphore.release();
+                }
+                @Override
+                public void onCancelled(DatabaseError error) { getSemaphore.release(); }
+            });
+            getSemaphore.acquire();
+            if (locations.isEmpty()) {
+                System.out.println("getCountriesForUrl Cache Miss, adding...");
+                LocationService locator = new LocationService();
+                Location[] locationArr = locator.getLocations(domain);
+                String[] countries = new String[locationArr.length];
+                for (int i = 0; i < locationArr.length; i++) {
+                    countries[i] = locationArr[i].country;
+                    // Cache results but non-blocking
+                    cacheRef.push().setValueAsync(locationArr[i]);
+                }
+                return countries;
+            } else {
+                String[] countries = new String[locations.size()];
+                for (int i = 0; i < locations.size(); i++) countries[i] = locations.get(i).country;
+                System.out.println("getCountriesForUrl Cache Hit");
+                return countries;
+            }
+
+        } catch (Exception e) {
+            return new String[0];
+        }
+    }
+
+    /**
+     * @author https://stackoverflow.com/questions/9607903/get-domain-name-from-given-url
+     */
+    public static String getDomainName(String url) {
+        try {
+            URI uri = new URI(url);
+            String domain = uri.getHost();
+            return domain.startsWith("www.") ? domain.substring(4) : domain;
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public static void main(String[] args) {
         System.out.println("Crawler running on environment = " + getEnvironment());
         initFirebase();
@@ -250,8 +310,7 @@ public class Main {
                     System.out.println("WARNING: Failed to crawl.");
                     continue;
                 }
-                LocationService locator = new LocationService();
-                addWordsToCountries(locator.getLocations(nextUrl), wordsOnPage);
+                addWordsToCountries(getCountriesForUrl(nextUrl), wordsOnPage);
                 addUrlsToQueue(urlsOnPage.stream().filter(url -> !url.equals(nextUrl)).collect(Collectors.toList()));
 
                 backoff = 1000;
