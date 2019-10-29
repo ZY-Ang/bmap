@@ -86,6 +86,10 @@ public class Main {
             @Override
             public void onCancelled(DatabaseError error) {}
         });
+        if (environment.equals("production")) {
+            // TODO: Re-enable once we're ready, commit and push.
+            exit(0);
+        }
     }
     
     /**
