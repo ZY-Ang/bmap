@@ -5,7 +5,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -95,8 +97,8 @@ public class Crawler {
      * Parse all <a> tag and return it as links
      * @return list of links parsed from html
      */
-    private List<String> parseURL(Document doc){
-        List<String> links = new ArrayList<>();
+    private Set<String> parseURL(Document doc){
+        Set<String> links = new HashSet<>();
 
         try {
             // Retrieve all <a> tag is html
