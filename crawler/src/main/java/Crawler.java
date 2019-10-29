@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -42,15 +43,19 @@ public class Crawler {
     }
 
     /**
-     * Access url and parse for links on the web page
-     * @return links found on the url's web page
+     * Updates 
+     * @param links - List of links to be added to
+     * @param words - Hashmap (count) of words to be added
+     *
+     * @return {@code true} if the crawl update succeeded or
+     *  {@code false} if the crawl did not succeed.
      */
-    public long crawl(List<String> links, List<String> words) {
+    public boolean crawl(List<String> links, Map<String, Long> words) {
         StringBuilder stringBuilder = new StringBuilder();
         long time = -1;
         if (connection == null) {
             // Non-http/s url, invalid url found
-            return time;
+            return false;
         }
         try {
             // Set http request headers
@@ -78,19 +83,24 @@ public class Crawler {
                 // Parse for links in html
                 Document doc = Jsoup.parse(response.toString(), url);
                 links.addAll(parseURL(doc));
-                words.addAll(parseWord(doc));
+                parseWord(doc).forEach(word -> {
+                    long count = words.containsKey(word) ? words.get(word) : 0;
+                    words.put(word, count + 1);
+                });
             } else {
                 stringBuilder.append("HTTP status code not OK");
             }
             connection.disconnect();
         } catch (IOException e) {
             System.out.printf("Unknown/invalid host: %s", url);
+            return false;
         } catch (UncheckedIOException e) {
 //            Http/s responses that cannot be parsed
 //            e.printStackTrace();
+            return false;
         }
         System.out.println(stringBuilder.toString());
-        return time;
+        return true;
     }
 
     /**
