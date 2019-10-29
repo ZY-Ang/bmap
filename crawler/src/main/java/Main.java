@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +44,7 @@ public class Main {
                     .setDatabaseUrl("https://buzzwordmap.firebaseio.com")
                     .build();
             FirebaseApp.initializeApp(options);
-            String environment = getEnvironment();
-            FirebaseDatabase.getInstance().getReference(environment + "/usethissubtree")
-                    .setValueAsync(environment.equals("production")
-                            ? "for production! Use other trees for development"
-                            : "for your own local development"
-                    );
+            seed();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("initFirebase failed. You probably forgot to download the firebase private key file " +
@@ -58,6 +54,40 @@ public class Main {
         }
     }
 
+    private static void seed() {
+        String environment = getEnvironment();
+        FirebaseDatabase db = FirebaseDatabase.getInstance();
+        // 1. Comment and garbage
+        db.getReference(environment + "/usethissubtree")
+                .setValueAsync(environment.equals("production")
+                        ? "for production! Use other trees for development"
+                        : "for your own local development"
+                );
+        // 2. Seed queue with initial data
+        db.getReference(environment + "/queue").addListenerForSingleValueEvent(new ValueEventListener() {
+            /**
+             * Seed an empty subtable with values here.
+             * (Probably want distribution to be nicely evened out globally)
+             */
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                if (snapshot.getValue() == null || snapshot.getChildrenCount() == 0) {
+                    String[] seed = {
+                            "https://9gag.com/",
+                            "https://www.scmp.com/",
+                            "https://www.thelocal.de/",
+                            "https://www.channelnewsasia.com/",
+                            "https://www.bloomberg.com/"
+                    };
+                    addUrlsToQueue(Arrays.asList(seed));
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {}
+        });
+    }
+    
     /**
      * Gets and deletes the next URL in the queue.
      * @return {@code null} if get was unsuccessful or deletion was unsucessful or url is invalid,
@@ -69,7 +99,8 @@ public class Main {
         boolean[] transacted = {false};
         String[] url = new String[1];
         String[] deletionRef = new String[1];
-        FirebaseDatabase.getInstance().getReference(environment + "/queue").orderByKey().limitToFirst(1).addListenerForSingleValueEvent(new ValueEventListener() {
+        FirebaseDatabase db = FirebaseDatabase.getInstance();
+        db.getReference(environment + "/queue").orderByKey().limitToFirst(1).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot querySnapshot) {
                 try {
@@ -87,7 +118,7 @@ public class Main {
         try {dirSemaphore.acquire();} catch (InterruptedException e) { e.printStackTrace(); }
         if (deletionRef[0] != null) {
             final Semaphore delSemaphore = new Semaphore(0);
-            FirebaseDatabase.getInstance().getReference(deletionRef[0]).runTransaction(new Transaction.Handler() {
+            db.getReference(deletionRef[0]).runTransaction(new Transaction.Handler() {
                 @Override
                 public Transaction.Result doTransaction(MutableData mutableData) {
                     String currentValue = mutableData.getValue(String.class);
@@ -152,7 +183,8 @@ public class Main {
      * Adds the words' counts to the respective location in the necessary countries
      */
     private static void addWordsToCountries(Location[] locations, Map<String, Long> wordCounts) {
-        System.out.println("addWordsToCountries = " + wordCounts.keySet().size());
+        System.out.println("addWordsToCountries.locations = " + locations.length);
+        System.out.println("addWordsToCountries.wordCounts = " + wordCounts.keySet().size());
         String environment = getEnvironment();
         FirebaseDatabase db = FirebaseDatabase.getInstance();
         for (String word : wordCounts.keySet()) {
@@ -214,11 +246,13 @@ public class Main {
                     System.out.println("WARNING: Failed to crawl.");
                     continue;
                 }
-                addWordsToCountries(LocationService.getLocations(nextUrl), wordsOnPage);
+                LocationService locator = new LocationService();
+                addWordsToCountries(locator.getLocations(nextUrl), wordsOnPage);
                 addUrlsToQueue(urlsOnPage.stream().filter(url -> !url.equals(nextUrl)).collect(Collectors.toList()));
 
                 backoff = 1000;
             } else {
+                System.out.println("backoff = " + backoff);
                 // Try fetching next URL again in 1,2,4,... seconds. Huzzah exponential backoff algorithm! LOL
                 try { Thread.sleep(backoff); } catch (InterruptedException e) {}
                 backoff *= 2;

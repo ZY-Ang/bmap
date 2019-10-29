@@ -67,7 +67,7 @@ public interface LocationServiceInterface {
           .filter (x -> x.matches ("([0-9]{1,3}+\\.){3}+[0-9]{1,3}+"))
           .toArray (String[]::new);
     } catch (UnknownHostException e) {
-      System.err.printf ("Host: %s not found", url);
+      System.err.printf ("Host: %s not found\n", url);
     }
     return new String[0];
   }
