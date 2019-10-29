@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": "true",
+    ".write": "false",
+    "devZY": {
+      "visited": {
+        ".indexOn": ["url"]
+      },
+      "queue": {
+        ".indexOn": ".value"
+      }
+    },
+    "production": {
+      "visited": {
+        ".indexOn": ["url"]
+      },
+      "queue": {
+        ".indexOn": ".value"
+      }
+    }
+  }
+}

@@ -2,6 +2,10 @@ package LocationService;
 
 public class Location {
 
+  /**
+   * Required empty constructor for Firebase. DO NOT AMEND.
+   */
+  public Location() {}
   public Location (String ip, String country, double latitude, double longitude) {
     this.ip = ip;
     this.country = country;
