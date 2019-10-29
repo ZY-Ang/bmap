@@ -61,6 +61,9 @@ public interface LocationServiceInterface {
     if (url == null) {
       return new String[0];
     }
+    if (url.matches ("https?://.*")) {
+      url = url.replaceFirst ("https?://", "");
+    }
     try {
       return Arrays.stream (InetAddress.getAllByName (url))
           .map (InetAddress::getHostAddress)
