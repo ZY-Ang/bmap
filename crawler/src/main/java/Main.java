@@ -75,11 +75,11 @@ public class Main {
             public void onDataChange(DataSnapshot snapshot) {
                 if (snapshot.getValue() == null || snapshot.getChildrenCount() == 0) {
                     String[] seed = {
-                            "https://9gag.com/",
-                            "https://www.scmp.com/",
-                            "https://www.thelocal.de/",
-                            "https://www.channelnewsasia.com/",
-                            "https://www.bloomberg.com/"
+                        "https://9gag.com/",
+                        "https://www.scmp.com/",
+                        "https://www.thelocal.de/",
+                        "https://www.channelnewsasia.com/",
+                        "https://www.bloomberg.com/"
                     };
                     addUrlsToQueue(Arrays.asList(seed));
                 }
@@ -219,13 +219,10 @@ public class Main {
         final boolean[] committed = {false};
         final Semaphore semaphore = new Semaphore(0);
         try {
-            FirebaseDatabase.getInstance().getReference(environment + "/visited").push().setValue(new Visited(url), new DatabaseReference.CompletionListener() {
-                @Override
-                public void onComplete(DatabaseError error, DatabaseReference ref) {
-                    if (error != null) System.err.println(error);
-                    else committed[0] = true;
-                    semaphore.release();
-                }
+            FirebaseDatabase.getInstance().getReference(environment + "/visited").push().setValue(new Visited(url), (error, ref) -> {
+                if (error != null) System.err.println(error);
+                else committed[0] = true;
+                semaphore.release();
             });
         } catch (Exception e) {}
         try { semaphore.acquire(); } catch (InterruptedException e) { e.printStackTrace(); }
