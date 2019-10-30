@@ -1,7 +1,6 @@
 package LocationService;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 public class LocationService {
 
@@ -10,7 +9,6 @@ public class LocationService {
 
   }
 
-  private static Map<String, String> countries;
   private LocationServiceInterface locationInterface;
 
   public void setLocationInterface (LocationServiceInterface locationInterface) {
