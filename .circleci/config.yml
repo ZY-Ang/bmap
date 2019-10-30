@@ -114,18 +114,9 @@ jobs:
           command: |
             ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "chmod +x ~/crawler/crawler-jar-with-dependencies.jar"
       - run:
+          # Enable more crawlers if necessary.
           name: Start parallel crawler x1
-          command: ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (JAVA_ENVIRON=production GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std1.out 2> std1.err & ) & "
-      - run:
-          name: Start parallel crawler x2
-          command: ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (JAVA_ENVIRON=production GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std2.out 2> std2.err & ) & "
-      - run:
-          name: Start parallel crawler x3
-          command: ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (JAVA_ENVIRON=production GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std3.out 2> std3.err & ) & "
-      - run:
-          name: Start parallel crawler x4
-          command: ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (JAVA_ENVIRON=production GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std4.out 2> std4.err & ) & "
-
+          command: ssh -o StrictHostKeyChecking=no -i "~/ec2-ws-key.pem" ubuntu@$SSH_HOST "cd ~/crawler && (JAVA_ENVIRON=production GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/crawler/firebase-adminsdk.json nohup java -jar crawler-jar-with-dependencies.jar > std.out 2> std.err & ) & "
 
 workflows:
   version: 2

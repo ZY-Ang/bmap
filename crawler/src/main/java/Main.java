@@ -19,8 +19,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
@@ -87,10 +89,8 @@ public class Main {
             @Override
             public void onCancelled(DatabaseError error) {}
         });
-        if (environment.equals("production")) {
-            // TODO: Re-enable once we're ready, commit and push.
-            exit(0);
-        }
+        // TODO: Once we're ready: Comment out or remove the line below, commit and push.
+        if (environment.equals("production")) exit(0);
     }
     
     /**
@@ -145,7 +145,9 @@ public class Main {
         }
         if (transacted[0]) {
             try {
-                return new URL(url[0]).toString();
+                URL parsedUrl = new URL(url[0]);
+                if (parsedUrl.getHost() == null) throw new MalformedURLException("Invalid hostname");
+                else return parsedUrl.toString();
             } catch (MalformedURLException e) {
                 System.err.println(url[0] + " is not a valid URL!");
                 return null;
@@ -184,21 +186,30 @@ public class Main {
         }));
     }
 
+    private static boolean isValidWordForAddition(String word) {
+        String trimmed = word.trim();
+        boolean isNaturalNumber = true;
+        try { Long num = Long.parseLong(trimmed); } catch (NumberFormatException e) { isNaturalNumber = false; }
+        return trimmed.length() > 0 && !isNaturalNumber;
+    }
+    
     /**
      * Adds the words' counts to the respective location in the necessary countries
      */
-    private static void addWordsToCountries(String[] countries, Map<String, Long> wordCounts) {
-        System.out.println("addWordsToCountries.countries = " + countries.length);
-        System.out.println("addWordsToCountries.wordCounts = " + wordCounts.keySet().size());
+    private static void addWords(Location[] locations, Map<String, Long> wordCounts) {
+        System.out.println("addWords.countries = " + locations.length);
+        System.out.println("addWords.wordCounts = " + wordCounts.keySet().size());
         String environment = getEnvironment();
         FirebaseDatabase db = FirebaseDatabase.getInstance();
-        for (String word : wordCounts.keySet()) {
-            for (String country: countries) {
-                db.getReference(environment + "/words/" + word + "/" + country).runTransaction(new Transaction.Handler() {
+        Set<String> countryCodes = new HashSet<>();
+        for (Location location : locations) countryCodes.add(location.code);
+        for (String word : wordCounts.keySet().stream().filter(Main::isValidWordForAddition).collect(Collectors.toList())) {
+            for (String countryCode: countryCodes) {
+                db.getReference(environment + "/words/" + word + "/" + countryCode).runTransaction(new Transaction.Handler() {
                     @Override
                     public Transaction.Result doTransaction(MutableData mutableData) {
                         Long count = mutableData.getValue(Long.class);
-                        if (count ==  null) mutableData.setValue(wordCounts.get(word));
+                        if (count == null) mutableData.setValue(wordCounts.get(word));
                         else mutableData.setValue(count + wordCounts.get(word));
                         return Transaction.success(mutableData);
                     }
@@ -209,6 +220,36 @@ public class Main {
         }
     }
 
+    /**
+     * @param locations - object obtained for a particular URL crawl.
+     *                  Used to calculate weighted average distribution
+     *                  of crawled sites so we can normalize the word
+     *                  frequencies.
+     * 
+     *                  Multiple servers in a request that belong to a
+     *                  country count as one.
+     */
+    private static void addCountries(Location[] locations) {
+        System.out.println("addCountries.countries = " + locations.length);
+        String environment = getEnvironment();
+        FirebaseDatabase db = FirebaseDatabase.getInstance();
+        Set<String> countryCodes = new HashSet<>();
+        for (Location location : locations) countryCodes.add(location.code);
+        for (String countryCode : countryCodes) {
+            db.getReference(environment + "/countries/" + countryCode).runTransaction(new Transaction.Handler() {
+                @Override
+                public Transaction.Result doTransaction(MutableData mutableData) {
+                    Long count = mutableData.getValue(Long.class);
+                    if (count == null) mutableData.setValue(1);
+                    else mutableData.setValue(count + 1);
+                    return Transaction.success(mutableData);
+                }
+                @Override
+                public void onComplete(DatabaseError error, boolean committed, DataSnapshot currentData) {}
+            });
+        }
+    }
+    
     /**
      * Marks a {@param url} as visited and not to be crawled again.
      * 
@@ -232,14 +273,15 @@ public class Main {
     /**
      * First queries our internal cache for results against a domain then the API.
      */
-    public static String[] getCountriesForUrl(String url) {
+    private static Location[] getCountriesForUrl(String url) {
         try {
             String environment = getEnvironment();
             String domain = getDomainName(url);
-            String domainUid = domain.replaceAll("\\.", "-");
+            if (domain == null) return new Location[0];
+            String domainId = domain.replaceAll("\\.", "-");
             final Semaphore getSemaphore = new Semaphore(0);
             List<Location> locations = new ArrayList<Location>();
-            DatabaseReference cacheRef = FirebaseDatabase.getInstance().getReference(environment + "/countriesCache/" + domainUid);
+            DatabaseReference cacheRef = FirebaseDatabase.getInstance().getReference(environment + "/geoCache/" + domainId);
             cacheRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
@@ -256,22 +298,19 @@ public class Main {
                 System.out.println("getCountriesForUrl Cache Miss, adding...");
                 LocationService locator = new LocationService();
                 Location[] locationArr = locator.getLocations(domain);
-                String[] countries = new String[locationArr.length];
-                for (int i = 0; i < locationArr.length; i++) {
-                    countries[i] = locationArr[i].country;
+                for (Location location : locationArr) {
                     // Cache results but non-blocking
-                    cacheRef.push().setValueAsync(locationArr[i]);
+                    String geoCachePath = environment + "/geoCache/" + domainId + "/" + location.code + "-" + location.ip.replaceAll("\\.", "-");
+                    FirebaseDatabase.getInstance().getReference(geoCachePath).setValueAsync(location);
                 }
-                return countries;
+                return locationArr;
             } else {
-                String[] countries = new String[locations.size()];
-                for (int i = 0; i < locations.size(); i++) countries[i] = locations.get(i).country;
                 System.out.println("getCountriesForUrl Cache Hit");
-                return countries;
+                return locations.toArray(new Location[0]);
             }
 
         } catch (Exception e) {
-            return new String[0];
+            return new Location[0];
         }
     }
 
@@ -306,7 +345,9 @@ public class Main {
                     System.out.println("WARNING: Failed to crawl.");
                     continue;
                 }
-                addWordsToCountries(getCountriesForUrl(nextUrl), wordsOnPage);
+                Location[] locations = getCountriesForUrl(nextUrl);
+                addWords(locations, wordsOnPage);
+                addCountries(locations);
                 addUrlsToQueue(urlsOnPage.stream().filter(url -> !url.equals(nextUrl)).collect(Collectors.toList()));
 
                 backoff = 1000;
