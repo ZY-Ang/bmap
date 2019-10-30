@@ -75,11 +75,11 @@ public class Main {
             public void onDataChange(DataSnapshot snapshot) {
                 if (snapshot.getValue() == null || snapshot.getChildrenCount() == 0) {
                     String[] seed = {
-                        "https://9gag.com/",
-                        "https://www.scmp.com/",
-                        "https://www.thelocal.de/",
-                        "https://www.channelnewsasia.com/",
-                        "https://www.bloomberg.com/"
+                        "https://www.spiegel.de/",
+                        "https://www.straitstimes.com/",
+                        "https://www.bloomberg.com/",
+                        "http://www.gov.cn/",
+                        "https://www.news.gov.hk/"
                     };
                     addUrlsToQueue(Arrays.asList(seed));
                 }
