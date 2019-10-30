@@ -1,10 +1,17 @@
 package LocationService;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public class LocationService {
 
-  private static LocationServiceInterface locationInterface = new LocationIPGeolocation();
+  public LocationService () {
+    locationInterface = new LocationIPGeolocation ();
+
+  }
+
+  private static Map<String, String> countries;
+  private LocationServiceInterface locationInterface;
 
   public void setLocationInterface (LocationServiceInterface locationInterface) {
     this.locationInterface = locationInterface;
