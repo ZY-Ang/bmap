@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
+import static java.lang.System.currentTimeMillis;
 import static java.lang.System.exit;
 
 public class Main {
@@ -89,7 +90,7 @@ public class Main {
             @Override
             public void onCancelled(DatabaseError error) {}
         });
-        // TODO: Once we're ready: Comment out or remove the line below, commit and push.
+        // TODO: Once we're ready: Comment out or remove the line below, check other TODOs, commit and push.
         if (environment.equals("production")) exit(0);
     }
     
@@ -265,7 +266,7 @@ public class Main {
                 else committed[0] = true;
                 semaphore.release();
             });
-        } catch (Exception e) {}
+        } catch (Exception e) { semaphore.release(); }
         try { semaphore.acquire(); } catch (InterruptedException e) { e.printStackTrace(); }
         return committed[0];
     }
@@ -317,7 +318,7 @@ public class Main {
     /**
      * @author https://stackoverflow.com/questions/9607903/get-domain-name-from-given-url
      */
-    public static String getDomainName(String url) {
+    private static String getDomainName(String url) {
         try {
             URI uri = new URI(url);
             return uri.getHost();
@@ -332,7 +333,9 @@ public class Main {
         initFirebase();
         
         int backoff = 1000;
-        while (true) {
+        // TODO: Update before scraper launch
+        //         Use {@link https://currentmillis.com/}
+        while (currentTimeMillis() < 1572503918372L) {
             String nextUrl = getAndDeleteNextUrl();
             if (nextUrl != null) {
                 System.out.println("\n======================== " + nextUrl + " ========================");
@@ -354,7 +357,7 @@ public class Main {
             } else {
                 System.out.println("backoff = " + backoff);
                 // Try fetching next URL again in 1,2,4,... seconds. Huzzah exponential backoff algorithm! LOL
-                try { Thread.sleep(backoff); } catch (InterruptedException e) {}
+                try { Thread.sleep(backoff); } catch (InterruptedException ignored) {}
                 backoff *= 2;
             }
         }
