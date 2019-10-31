@@ -91,7 +91,7 @@ public class Main {
             public void onCancelled(DatabaseError error) {}
         });
         // TODO: Once we're ready: Comment out or remove the line below, check other TODOs, commit and push.
-        if (environment.equals("production")) exit(0);
+//        if (environment.equals("production")) exit(0);
     }
     
     /**
@@ -335,7 +335,7 @@ public class Main {
         int backoff = 1000;
         // TODO: Update before scraper launch
         //         Use {@link https://currentmillis.com/}
-        while (currentTimeMillis() < 1572503918372L) {
+        while (currentTimeMillis() < 1572537599999L) {
             String nextUrl = getAndDeleteNextUrl();
             if (nextUrl != null) {
                 System.out.println("\n======================== " + nextUrl + " ========================");
