@@ -49,13 +49,31 @@ public class Main {
                     .setDatabaseUrl("https://buzzwordmap.firebaseio.com")
                     .build();
             FirebaseApp.initializeApp(options);
-            seed();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("initFirebase failed. You probably forgot to download the firebase private key file " +
                     "and/or set the environment variable $GOOGLE_APPLICATION_CREDENTIALS to its directory. \n\n" +
                     "See https://firebase.google.com/docs/admin/setup#initialize_the_sdk for more information.");
             exit(1);
+        }
+    }
+
+    /**
+     * Deletes all elements in the production queue. Used for reseeding
+     */
+    private static void deleteProductionQueue() {
+        final Semaphore sem = new Semaphore(0);
+        FirebaseDatabase.getInstance().getReference("production/queue").setValue(null, new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                System.out.println("Deleted queue");
+                sem.release();
+            }
+        });
+        try {
+            sem.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -78,11 +96,58 @@ public class Main {
             public void onDataChange(DataSnapshot snapshot) {
                 if (snapshot.getValue() == null || snapshot.getChildrenCount() == 0) {
                     String[] seed = {
-                        "https://www.spiegel.de/",
-                        "https://www.straitstimes.com/",
-                        "https://www.bloomberg.com/",
-                        "http://www.gov.cn/",
-                        "https://www.news.gov.hk/"
+                        "https://en.wikipedia.org/wiki/List_of_news_agencies",
+                        "https://indiatimes.com/",
+                        "http://chinadaily.com.cn/",
+                        "https://news.com.au/",
+                        "https://news.com.au/",
+                        "https://mexiconewsdaily.com/",
+                        "https://www.peruviantimes.com/",
+                        "https://www.batimes.com.ar/",
+                        "https://riotimesonline.com/",
+                        "https://brazilian.report/",
+                        "https://en.mercopress.com/",
+                        "https://www.arabnews.com/",
+                        "https://www.aljazeera.com/",
+                        "https://www.bbc.co.uk/",
+                        "https://www.independent.co.uk/",
+                        "http://www.koreaherald.com/",
+                        "https://www.koreatimes.co.kr/",
+                        "https://en.yna.co.kr/",
+                        "http://www.kcna.kp/",
+                        "http://www.xinhuanet.com/",
+                        "http://www.globaltimes.cn/",
+                        "http://www.cctv.com/",
+                        "http://english.cctv.com/",
+                        "https://egyptianstreets.com/",
+                        "http://www.masrawy.com/",
+                        "http://www.ngmisr.com/",
+                        "http://www.arabwestreport.info/",
+                        "http://www.tuko.co.ke/",
+                        "http://sudaneseonline.com/",
+                        "http://themoroccantimes.com/",
+                        "http://www.itnewsafrica.com/",
+                        "https://www.afp.com/",
+                        "https://www.france24.com/",
+                        "https://www.thecanadianpress.com/",
+                        "https://www.thecanadianpress.com/",
+                        "https://www.cbc.ca/",
+                        "http://www.canadanewsagency.com/",
+                        "https://www.thelocal.se/",
+                        "https://tt.se/",
+                        "swedishpressagency.se/",
+                        "https://www.newsroom.co.nz/",
+                        "http://www.scoop.co.nz/",
+                        "https://www.nzherald.co.nz",
+                        "https://www.abc.net.au/",
+                        "https://www.news.com.au/",
+                        "https://www.theaustralian.com.au/",
+                        "https://www.kyodonews.jp/",
+                        "https://english.kyodonews.net/",
+                        "https://www.japantimes.co.jp/",
+                        "https://japantoday.com/",
+                        "http://www.bernama.com/",
+                        "http://www.mycen.com.my/"
                     };
                     addUrlsToQueue(Arrays.asList(seed));
                 }
@@ -331,11 +396,12 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Crawler running on environment = " + getEnvironment());
         initFirebase();
+        seed();
         
         int backoff = 1000;
         // TODO: Update before scraper launch
         //         Use {@link https://currentmillis.com/}
-        while (currentTimeMillis() < 1572537599999L) {
+        while (currentTimeMillis() < 1572681600000L) {
             String nextUrl = getAndDeleteNextUrl();
             if (nextUrl != null) {
                 System.out.println("\n======================== " + nextUrl + " ========================");
