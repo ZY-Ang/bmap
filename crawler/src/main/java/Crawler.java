@@ -39,7 +39,7 @@ public class Crawler {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        } catch (Exception ignored) {}
     }
 
     /**
@@ -94,7 +94,7 @@ public class Crawler {
         } catch (IOException e) {
             System.out.printf("Unknown/invalid host: %s", url);
             return false;
-        } catch (UncheckedIOException e) {
+        } catch (Exception e) {
 //            Http/s responses that cannot be parsed
 //            e.printStackTrace();
             return false;
@@ -119,10 +119,10 @@ public class Crawler {
                 if (!s.isEmpty())
                     links.add(s);
             }
-        } catch (UncheckedIOException e) {
+        } catch (UncheckedIOException ignored) {
 //            Http/s responses that cannot be parsed
 //            e.printStackTrace();
-        }
+        } catch (Exception ignored) {}
         return links;
     }
 
@@ -132,10 +132,10 @@ public class Crawler {
             String body = doc.body().text();
             words = Arrays.asList(body.replaceAll("[^a-zA-Z ]", "").toLowerCase().split("\\s+"));
 
-        } catch (UncheckedIOException e) {
+        } catch (UncheckedIOException ignored) {
 //            Http/s responses that cannot be parsed
 //            e.printStackTrace();
-        }
+        } catch (Exception ignored) {}
         return words;
     }
 }
