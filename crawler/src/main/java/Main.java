@@ -401,7 +401,7 @@ public class Main {
         int backoff = 1000;
         // TODO: Update before scraper launch
         //         Use {@link https://currentmillis.com/}
-        while (currentTimeMillis() < 1573020000000L) {
+        while (currentTimeMillis() < 1573624800000L) {
             String nextUrl = getAndDeleteNextUrl();
             if (nextUrl != null) {
                 System.out.println("\n======================== " + nextUrl + " ========================");
