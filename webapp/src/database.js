@@ -57,8 +57,20 @@ export const getWeightedDataForWordOnce = async word => {
 export const subscribeInvocationDistribution = _function => db.ref('/production/countries').on('value', _function);
 
 /**
+ * Un-subscribes a previously subscribed callback
+ * {@param _function} on invocation distribution.
+ */
+export const unsubscribeInvocationDistribution = _function => db.ref('/production/countries').off('value', _function);
+
+/**
  * Invokes {@param _function} which accepts a single
  * {@param snapshot} argument to obtain updated values
  * from the given {@param word} table when values change.
  */
 export const subscribeDataForWord = (word, _function) => db.ref(`/production/words/${word}`).on('value', _function);
+
+/**
+ * Un-subscribes a previously subscribed callback
+ * {@param _function} on a {@param word} distribution.
+ */
+export const unsubscribeDataForWord = (word, _function) => db.ref(`/production/words/${word}`).off('value', _function);
