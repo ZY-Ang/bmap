@@ -3,13 +3,13 @@ import { VectorMap } from '@south-paw/react-vector-maps';
 import world from './world.json';
 import './App.css';
 import styled from 'styled-components';
+
 import {
     subscribeDataForWord,
     subscribeInvocationDistribution,
     unsubscribeDataForWord,
     unsubscribeInvocationDistribution
 } from "./database";
-
 
 
 const Map = styled.div`
@@ -45,8 +45,8 @@ const Map = styled.div`
       }
 
       // You can also highlight a specific layer via it's id
-      &[id = fr ] {
-        fill: rgba(56,43,168,0.6);
+      &[id = ${props => props.theme}] {
+        fill: #ff1919;
       }
     }
   }
@@ -76,18 +76,18 @@ class App extends React.Component {
         if (e) {
             e.preventDefault();
         }
-        const {word} = this.state;
+        const { word } = this.state;
         if (!!this.wordDistributionListener) {
             unsubscribeDataForWord(this.state.previousWord, this.wordDistributionListener);
-            this.setState({previousWord: word});
+            this.setState({ previousWord: word });
         }
         this.wordDistributionListener = snapshot => this.setState(state => {
-            const {invocationDistribution} = this.state;
+            const { invocationDistribution } = this.state;
             let wordDistribution = snapshot.val();
             if (!!wordDistribution && wordDistribution.constructor === Object && Object.keys(invocationDistribution).length > 0) {
                 Object.keys(wordDistribution).map(key => (wordDistribution[key] /= invocationDistribution[key]));
-                return {wordDistribution};
-            } else return {wordDistribution: null};
+                return { wordDistribution };
+            } else return { wordDistribution: null };
         });
         subscribeDataForWord(word, this.wordDistributionListener);
     };
@@ -101,10 +101,30 @@ class App extends React.Component {
         }
     }
 
+    changecountryCodes(data) {
+        if (data != null) {
+            const array = [];
+            for (var x of Object.keys(data)) {
+                array.push(x.toLowerCase());
+            }
+            console.log(array);
+            return array;
+        }
+        return [];
+    }
+
+    colorize(floatnumber) {
+        if (floatnumber > 0 && floatnumber < 0.1) {
+            return "ffb2b2";
+        }else if (floatnumber >= 0.1 && floatnumber < 0.4){
+            return "ff6666";
+        }else {
+            return "ff1919";
+        }
+    }
+
     render() {
-
-        console.log(this.state.wordDistribution);
-
+        console.log(this.state.wordDistribution)
         return (
             <div className="App">
                 <form
@@ -122,11 +142,13 @@ class App extends React.Component {
                         type="text"
                         placeholder="hello"
                         value={this.state.word}
-                        onChange={e => this.setState({word: e.target.value})}
+                        onChange={e => this.setState({ word: e.target.value })}
                     />
                 </form>
-                <Map>
-                <VectorMap {...world}
+                <Map theme={this.changecountryCodes(this.state.wordDistribution).map(function (name) {
+                    console.log(name); return name;
+                })}>
+                    <VectorMap {...world}
                     />
                 </Map>
             </div>
