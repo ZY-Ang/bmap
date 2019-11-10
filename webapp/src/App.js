@@ -3,7 +3,6 @@ import { VectorMap } from '@south-paw/react-vector-maps';
 import world from './world.json';
 import './App.css';
 import styled from 'styled-components';
-
 import {
     subscribeDataForWord,
     subscribeInvocationDistribution,
@@ -133,7 +132,7 @@ class App extends React.Component {
                         width: '100%',
                         height: '30%',
                         display: 'flex',
-                        justifyContent: 'left',
+                        justifyContent: 'center',
                         alignItems: 'center'
                     }}
                     onSubmit={this.getWord}
