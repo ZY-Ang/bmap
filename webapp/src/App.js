@@ -2,12 +2,55 @@ import React from "react";
 import { VectorMap } from '@south-paw/react-vector-maps';
 import world from './world.json';
 import './App.css';
+import styled from 'styled-components';
 import {
     subscribeDataForWord,
     subscribeInvocationDistribution,
     unsubscribeDataForWord,
     unsubscribeInvocationDistribution
 } from "./database";
+
+
+
+const Map = styled.div`
+    margin: 1rem auto;
+    width: 1000px;
+  svg {
+    stroke: black;
+
+    // All layers are just path elements
+    path {
+      fill: grey;
+      cursor: pointer;
+      outline: none;
+
+      // When a layer is hovered
+      &:hover {
+        fill: rgba(168,43,43,0.83);
+      }
+
+      // When a layer is focused.
+      &:focus {
+        fill: rgba(168,43,43,0.6);
+      }
+
+      // When a layer is 'checked' (via checkedLayers prop).
+      &[aria-checked='true'] {
+        fill: rgba(56,43,168,1);
+      }
+
+      // When a layer is 'selected' (via currentLayers prop).
+      &[aria-current='true'] {
+        fill: rgba(56,43,168,0.83);
+      }
+
+      // You can also highlight a specific layer via it's id
+      &[id = fr ] {
+        fill: rgba(56,43,168,0.6);
+      }
+    }
+  }
+`;
 
 
 class App extends React.Component {
@@ -20,8 +63,6 @@ class App extends React.Component {
             wordDistribution: null
         };
     }
-
-
 
     componentDidMount() {
         this.invocationDistributionListener = snapshot => this.setState({
@@ -63,6 +104,7 @@ class App extends React.Component {
     render() {
 
         console.log(this.state.wordDistribution);
+        let x = this.state.wordDistribution;
         return (
             <div className="App">
                 <form
@@ -83,10 +125,10 @@ class App extends React.Component {
                         onChange={e => this.setState({word: e.target.value})}
                     />
                 </form>
-                <VectorMap {...world} 
-                
-                    
-                        />
+                <Map>
+                <VectorMap {...world}
+                    />
+                </Map>
             </div>
         );
     }
