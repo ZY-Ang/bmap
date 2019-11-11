@@ -16,11 +16,11 @@ const Map = styled.div`
     margin: 1rem auto;
     width: 1000px;
   svg {
-    stroke: black;
+    stroke: #fff;
 
     // All layers are just path elements
     path {
-      fill: grey;
+      fill: #2b222c;
       cursor: pointer;
       outline: none;
 
@@ -34,20 +34,8 @@ const Map = styled.div`
         fill: rgba(168,43,43,0.6);
       }
 
-      // When a layer is 'checked' (via checkedLayers prop).
-      &[aria-checked='true'] {
-        fill: rgba(56,43,168,1);
-      }
-
-      // When a layer is 'selected' (via currentLayers prop).
-      &[aria-current='true'] {
-        fill: rgba(56,43,168,0.83);
-      }
-
       // You can also highlight a specific layer via it's id
-      &[id = ${props => props.theme}] {
-        fill: #ff1919;
-      }
+      ${props => props.layers}
     }
   }
 `;
@@ -101,30 +89,41 @@ class App extends React.Component {
         }
     }
 
-    changecountryCodes(data) {
-        if (data != null) {
-            const array = [];
-            for (var x of Object.keys(data)) {
-                array.push(x.toLowerCase());
-            }
-            console.log(array);
-            return array;
+    colorize(floatnumber) {
+        if (floatnumber < 0.05) {
+            return "#ffc9c5";
+        }else if (floatnumber < 0.1){
+            return "#ffa9a3";
+        }else if (floatnumber < 0.3){
+            return "#ff8d85";
+        }else if (floatnumber < 0.6){
+            return "#ff675c";
+        }else if (floatnumber < 0.8){
+            return "#ff493c";
+        }else {
+            return "#ff2f21";
         }
-        return [];
     }
 
-    colorize(floatnumber) {
-        if (floatnumber > 0 && floatnumber < 0.1) {
-            return "ffb2b2";
-        }else if (floatnumber >= 0.1 && floatnumber < 0.4){
-            return "ff6666";
-        }else {
-            return "ff1919";
+    styleLayers(countryWeightMap) {
+        var style = "";
+        for (let key of Object.keys(countryWeightMap)) {
+            style = style + "\n&[id = \"" + key.toLowerCase() + "\"] {fill: " + this.colorize(countryWeightMap[key]) + ";}";
         }
+        console.log(style);
+        return style;
     }
+
 
     render() {
-        console.log(this.state.wordDistribution)
+        console.log("wordDistribution");
+        console.log(this.state.wordDistribution);
+        let layersStyle = "";
+        if (this.state.wordDistribution != null) {
+            console.log("styles");
+            layersStyle = this.styleLayers(this.state.wordDistribution);
+        }
+
         return (
             <div className="App">
                 <form
@@ -145,9 +144,7 @@ class App extends React.Component {
                         onChange={e => this.setState({ word: e.target.value })}
                     />
                 </form>
-                <Map theme={this.changecountryCodes(this.state.wordDistribution).map(function (name) {
-                    console.log(name); return name;
-                })}>
+                <Map layers={layersStyle}>
                     <VectorMap {...world}
                     />
                 </Map>
