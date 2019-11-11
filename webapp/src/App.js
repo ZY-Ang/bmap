@@ -12,8 +12,9 @@ import {
 
 
 const Map = styled.div`
-    margin: 1rem auto;
-    width: 1000px;
+    margin: 0 auto;
+    height: 100%;
+    overflow-x: hidden;
   svg {
     stroke: #fff;
 
@@ -91,21 +92,21 @@ class App extends React.Component {
     colorize(floatnumber) {
         if (floatnumber < 0.05) {
             return "#ffc9c5";
-        }else if (floatnumber < 0.1){
+        } else if (floatnumber < 0.1) {
             return "#ffa9a3";
-        }else if (floatnumber < 0.3){
+        } else if (floatnumber < 0.3) {
             return "#ff8d85";
-        }else if (floatnumber < 0.6){
+        } else if (floatnumber < 0.6) {
             return "#ff675c";
-        }else if (floatnumber < 0.8){
+        } else if (floatnumber < 0.8) {
             return "#ff493c";
-        }else {
+        } else {
             return "#ff2f21";
         }
     }
 
     styleLayers(countryWeightMap) {
-        var style = "";
+        let style = "";
         for (let key of Object.keys(countryWeightMap)) {
             style = style + "\n&[id = \"" + key.toLowerCase() + "\"] {fill: " + this.colorize(countryWeightMap[key]) + ";}";
         }
@@ -115,11 +116,9 @@ class App extends React.Component {
 
 
     render() {
-        console.log("wordDistribution");
         console.log(this.state.wordDistribution);
         let layersStyle = "";
         if (this.state.wordDistribution != null) {
-            console.log("styles");
             layersStyle = this.styleLayers(this.state.wordDistribution);
         }
 
@@ -144,8 +143,7 @@ class App extends React.Component {
                     />
                 </form>
                 <Map layers={layersStyle}>
-                    <VectorMap {...world}
-                    />
+                    <VectorMap {...world}/>
                 </Map>
             </div>
         );
