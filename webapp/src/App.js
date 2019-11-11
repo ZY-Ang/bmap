@@ -110,7 +110,7 @@ class App extends React.Component {
         let style = "";
         let min = Infinity;
         let max = -Infinity;
-        for (let key in Object.keys(countryWeightMap)) {
+        for (let key of Object.keys(countryWeightMap)) {
             if (countryWeightMap[key] < min) min = countryWeightMap[key];
             if (countryWeightMap[key] > max) max = countryWeightMap[key];
         }
