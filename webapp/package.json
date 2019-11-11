@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@south-paw/react-vector-maps": "^3.0.0",
+    "d3-scale": "^3.2.0",
+    "datamaps": "^0.5.9",
     "firebase": "^7.2.1",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
+    "react-jvectormap": "0.0.14",
     "react-redux": "^7.1.1",
     "react-scripts": "3.2.0",
-    "redux": "^4.0.4"
+    "react-simple-maps": "^1.0.0-beta.0",
+    "react-world-map": "^1.0.13",
+    "redux": "^4.0.4",
+    "styled-components": "^4.4.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -32,6 +39,7 @@
     ]
   },
   "devDependencies": {
+    "@types/node": "^12.12.7",
     "firebase-tools": "^7.6.1"
   }
 }
