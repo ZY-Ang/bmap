@@ -89,30 +89,36 @@ class App extends React.Component {
         }
     }
 
-    colorize(floatnumber) {
-        if (floatnumber < 0.05) {
+    colorize = (floatnumber, min, max) => {
+        const range = max - min;
+        if (floatnumber < (range * 0.17) + min) {
             return "#ffc9c5";
-        } else if (floatnumber < 0.1) {
+        } else if (floatnumber < (range * 0.33) + min) {
             return "#ffa9a3";
-        } else if (floatnumber < 0.3) {
+        } else if (floatnumber < (range * 0.50) + min) {
             return "#ff8d85";
-        } else if (floatnumber < 0.6) {
+        } else if (floatnumber < (range * 0.67) + min) {
             return "#ff675c";
-        } else if (floatnumber < 0.8) {
+        } else if (floatnumber < (range * 0.83) + min) {
             return "#ff493c";
         } else {
             return "#ff2f21";
         }
-    }
+    };
 
-    styleLayers(countryWeightMap) {
+    styleLayers = (countryWeightMap) => {
         let style = "";
-        for (let key of Object.keys(countryWeightMap)) {
-            style = style + "\n&[id = \"" + key.toLowerCase() + "\"] {fill: " + this.colorize(countryWeightMap[key]) + ";}";
+        let min = Infinity;
+        let max = -Infinity;
+        for (let key in Object.keys(countryWeightMap)) {
+            if (countryWeightMap[key] < min) min = countryWeightMap[key];
+            if (countryWeightMap[key] > max) max = countryWeightMap[key];
         }
-        console.log(style);
+        for (let key of Object.keys(countryWeightMap)) {
+            style = style + "\n&[id = \"" + key.toLowerCase() + "\"] {fill: " + this.colorize(countryWeightMap[key], min, max) + ";}";
+        }
         return style;
-    }
+    };
 
 
     render() {
